@@ -1,11 +1,11 @@
 
-ffi = require "ffi"
-curl = require "lcurl"
-b64 = require "basexx"
+local ffi = require "ffi"
+local curl = require "lcurl"
+local b64 = require "basexx"
 
-nonce = function(len) 
+local nonce = function(len)
   math.randomseed(os.time())
-  possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  local possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
   local str = ""
   for k=1,len do
     n=math.random(1,#possible)
@@ -24,9 +24,9 @@ int key_len, const unsigned char *d, int n,
 unsigned char *md, unsigned int *md_len);
 ]]
 
-ssl = ffi.load("/usr/lib/libssl.so")
+local ssl = ffi.load("/usr/lib/libssl.so")
 
-twitter = {}
+twitter = {} -- Not local while testing through Lua REPL
 twitter.params = {
   ["oauth_consumer_key"]=consumerKey,
   ["oauth_token"]=token,
@@ -35,7 +35,7 @@ twitter.params = {
 }
 
 twitter.get = function(url,query)
-    local rawdata = io.open("/dev/shm/rawdata.txt","w+")
+    local tmp = io.open("/dev/shm/tmp.txt","w+")
     local oauth = {}
     oauth.oauth_timestamp = os.time()
     oauth.oauth_nonce = nonce(6)
@@ -97,15 +97,18 @@ twitter.get = function(url,query)
     header = header:sub(1,#header-1)
 
     req:setopt_url(url .. "?" .. p .. header)
-    req:setopt_writefunction(rawdata)
+    req:setopt_writefunction(tmp)
     req:perform()
     req:close()
-    rawdata:close()
+    tmp:seek("set")
+    local res = tmp:read("*all")
+    tmp:close()
+    return res
 
 end
 
 twitter.post = function(url,query)
-    local rawdata = io.open("/dev/shm/rawdata.txt","w+")
+    local tmp = io.open("/dev/shm/tmp.txt","w+")
     local oauth = {}
     oauth.oauth_timestamp = os.time()
     oauth.oauth_nonce = nonce(6)
@@ -167,9 +170,12 @@ twitter.post = function(url,query)
     req:setopt_postfields(p .. header)
     req:setopt_url(url)
     req:setopt_httpheader{"content-type: application/x-www-form-urlencoded"}
-    req:setopt_writefunction(rawdata)
+    req:setopt_writefunction(tmp)
     req:perform()
     req:close()
-    rawdata:close()
+    tmp:seek("set")
+    local res = tmp:read("*all")
+    tmp:close()
+    return res
 
 end
