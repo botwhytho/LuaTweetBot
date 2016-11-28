@@ -28,75 +28,67 @@ local ssl = ffi.load("/usr/lib/libssl.so")
 
 twitter = {} -- Not local while testing through Lua REPL
 twitter.params = {
-  ["oauth_consumer_key"]=consumerKey,
-  ["oauth_token"]=token,
-  ["oauth_signature_method"]="HMAC-SHA1",
-  ["oauth_version"]="1.0"
+  {p="oauth_consumer_key",v=consumerKey},
+  {p="oauth_token",v=token},
+  {p="oauth_signature_method",v="HMAC-SHA1"},
+  {p="oauth_version",v="1.0"}
 }
 
 twitter.get = function(url,query)
     local tmp = io.open("/dev/shm/tmp.txt","w+")
-    local oauth = {}
-    oauth.oauth_timestamp = os.time()
-    oauth.oauth_nonce = nonce(6)
+    oauth = {unpack(twitter.params)}
+    table.insert(oauth, {p="oauth_timestamp",v=os.time()})
+    table.insert(oauth,{p="oauth_nonce",v=nonce(6)})
 
-    for k,v in pairs(twitter.params) do
-      oauth[k] = v
-    end
 
-    local allParams = {}
+    allParams = {unpack(oauth)}
     for k,v in ipairs(query) do
       table.insert(allParams,v)
-    end
-
-    for k,v in pairs(oauth) do
-      table.insert(allParams,{p=k,v=v})
     end
 
     table.sort(allParams,function(a,b) return a.p < b.p end)
 
     local req = curl.easy()
 
-    local baseString= "GET&" .. req:escape(url) .. "&"
-    local bs=""
+     baseString=""
+     bs=""
 
     for _,v in ipairs(allParams) do
-      bs = bs .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
+      baseString = baseString .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
     end
 
-    baseString=baseString .. req:escape(bs:sub(1,#bs-1))
+    baseString=baseString:sub(1,#baseString-1)
+    bs="GET&" .. req:escape(url) .. "&" .. req:escape(baseString)
 
     local signature = ssl.HMAC(ssl.EVP_sha1(),
     req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret),
     #(req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret)),
-    baseString,
-    #baseString,
+    bs,
+    #bs,
     nil,
     nil)
 
     local sig = b64.to_base64(ffi.string(signature))
     table.insert(allParams,{p="oauth_signature",v=sig})
 
-    local p=""
-
-    for _,v in ipairs(query) do
-      p = p .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
-    end
-
-    --p = p:sub(1,#p-1)
-
-
-    local header = ""
+    p="" --Local later
 
     for _,v in ipairs(allParams) do
-      if string.match(v.p,"oauth") then
-        header = header .. v.p .. "=" .. req:escape(v.v)  .. "&"
+      if not string.match(v.p,"oauth") then
+        p = p .. req:escape(v.p) .. "=" .. req:escape(v.v)  .. "&"
       end
     end
 
-    header = header:sub(1,#header-1)
+    for _,v in ipairs(allParams) do
+      if string.match(v.p,"oauth") then
+        p = p .. v.p .. "=" .. req:escape(v.v)  .. "&"
+      end
+    end
 
-    req:setopt_url(url .. "?" .. p .. header)
+    p = p:sub(1,#p-1)
+
+
+    req:setopt_url(url .. "?" .. p)
     req:setopt_writefunction(tmp)
     req:perform()
     req:close()
@@ -109,65 +101,57 @@ end
 
 twitter.post = function(url,query)
     local tmp = io.open("/dev/shm/tmp.txt","w+")
-    local oauth = {}
-    oauth.oauth_timestamp = os.time()
-    oauth.oauth_nonce = nonce(6)
+    oauth = {unpack(twitter.params)}
+    table.insert(oauth, {p="oauth_timestamp",v=os.time()})
+    table.insert(oauth,{p="oauth_nonce",v=nonce(6)})
 
-    for k,v in pairs(twitter.params) do
-      oauth[k] = v
-    end
-
-    local allParams = {}
+    allParams = {unpack(oauth)}
     for _,v in ipairs(query) do
       table.insert(allParams,v)
-    end
-
-    for k,v in pairs(oauth) do
-      table.insert(allParams,{p=k,v=v})
     end
 
     table.sort(allParams,function(a,b) return a.p < b.p end)
 
     local req = curl.easy()
 
-    local baseString= "POST&" .. req:escape(url) .. "&"
-    local bs=""
+    baseString= ""
+    bs=""
 
     for _,v in ipairs(allParams) do
-      bs = bs .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
+      baseString = baseString .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
     end
 
-    baseString=baseString .. req:escape(bs:sub(1,#bs-1))
+    baseString=req:escape(baseString:sub(1,#baseString-1))
+    bs = "POST&" .. req:escape(url) .. "&" .. baseString
 
     local signature = ssl.HMAC(ssl.EVP_sha1(),
     req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret),
     #(req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret)),
-    baseString,
-    #baseString,
+    bs,
+    #bs,
     nil,
     nil)
 
     local sig = b64.to_base64(ffi.string(signature))
     table.insert(allParams,{p="oauth_signature",v=sig})
 
-    local p=""
-
-    for _,v in ipairs(query) do
-      p = p .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
-    end
-
-
-    local header = ""
+    p=""
 
     for _,v in ipairs(allParams) do
-      if string.match(v.p,"oauth") then
-        header = header .. v.p .. "=" .. req:escape(v.v)  .. "&"
+      if not string.match(v.p,"oauth") then
+        p = p .. req:escape(v.p) .. "=" .. req:escape(v.v)  .. "&"
       end
     end
 
-    header = header:sub(1,#header-1)
+    for _,v in ipairs(allParams) do
+      if string.match(v.p,"oauth") then
+        p = p .. v.p .. "=" .. req:escape(v.v)  .. "&"
+      end
+    end
 
-    req:setopt_postfields(p .. header)
+    p = p:sub(1,#p-1)
+
+    req:setopt_postfields(p)
     req:setopt_url(url)
     req:setopt_httpheader{"content-type: application/x-www-form-urlencoded"}
     req:setopt_writefunction(tmp)
