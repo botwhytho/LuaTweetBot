@@ -34,7 +34,7 @@ twitter.params = {
   {p="oauth_version",v="1.0"}
 }
 
-twitter.get = function(url,query)
+twitter.rest = function(op,url,query)
     local tmp = io.open("/dev/shm/tmp.txt","w+")
     oauth = {unpack(twitter.params)}
     table.insert(oauth, {p="oauth_timestamp",v=os.time()})
@@ -58,7 +58,7 @@ twitter.get = function(url,query)
     end
 
     baseString=baseString:sub(1,#baseString-1)
-    bs="GET&" .. req:escape(url) .. "&" .. req:escape(baseString)
+    bs= op .. "&" .. req:escape(url) .. "&" .. req:escape(baseString)
 
     local signature = ssl.HMAC(ssl.EVP_sha1(),
     req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret),
@@ -87,8 +87,16 @@ twitter.get = function(url,query)
 
     p = p:sub(1,#p-1)
 
-
-    req:setopt_url(url .. "?" .. p)
+    if op == "GET" then
+      req:setopt_url(url .. "?" .. p)
+    elseif op == "POST" then
+      req:setopt_postfields(p)
+      req:setopt_url(url)
+      req:setopt_httpheader{"content-type: application/x-www-form-urlencoded"}
+    else
+      --need to define other things to do if other http verbs are allowed
+      req:setopt_url(url)
+    end
     req:setopt_writefunction(tmp)
     req:perform()
     req:close()
@@ -99,67 +107,10 @@ twitter.get = function(url,query)
 
 end
 
+twitter.get = function(url,query)
+  return twitter.rest("GET",url,query)
+end
+
 twitter.post = function(url,query)
-    local tmp = io.open("/dev/shm/tmp.txt","w+")
-    oauth = {unpack(twitter.params)}
-    table.insert(oauth, {p="oauth_timestamp",v=os.time()})
-    table.insert(oauth,{p="oauth_nonce",v=nonce(6)})
-
-    allParams = {unpack(oauth)}
-    for _,v in ipairs(query) do
-      table.insert(allParams,v)
-    end
-
-    table.sort(allParams,function(a,b) return a.p < b.p end)
-
-    local req = curl.easy()
-
-    baseString= ""
-    bs=""
-
-    for _,v in ipairs(allParams) do
-      baseString = baseString .. req:escape(v.p) .. "=" .. req:escape(v.v) .. "&"
-    end
-
-    baseString=req:escape(baseString:sub(1,#baseString-1))
-    bs = "POST&" .. req:escape(url) .. "&" .. baseString
-
-    local signature = ssl.HMAC(ssl.EVP_sha1(),
-    req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret),
-    #(req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret)),
-    bs,
-    #bs,
-    nil,
-    nil)
-
-    local sig = b64.to_base64(ffi.string(signature))
-    table.insert(allParams,{p="oauth_signature",v=sig})
-
-    p=""
-
-    for _,v in ipairs(allParams) do
-      if not string.match(v.p,"oauth") then
-        p = p .. req:escape(v.p) .. "=" .. req:escape(v.v)  .. "&"
-      end
-    end
-
-    for _,v in ipairs(allParams) do
-      if string.match(v.p,"oauth") then
-        p = p .. v.p .. "=" .. req:escape(v.v)  .. "&"
-      end
-    end
-
-    p = p:sub(1,#p-1)
-
-    req:setopt_postfields(p)
-    req:setopt_url(url)
-    req:setopt_httpheader{"content-type: application/x-www-form-urlencoded"}
-    req:setopt_writefunction(tmp)
-    req:perform()
-    req:close()
-    tmp:seek("set")
-    local res = tmp:read("*all")
-    tmp:close()
-    return res
-
+  return twitter.rest("POST",url,query)
 end
