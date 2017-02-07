@@ -1,12 +1,12 @@
 
-local ffi = require "ffi"
+--local ffi = require "ffi"
+require "SECRETS"
 local curl = require "lcurl"
 local HMAC = require "HMAC"
 
-
-twitter = {} -- Not local while testing through Lua REPL
+local twitter = {} -- Not local while testing through Lua REPL
 twitter.params = {
-  {p="oauth_consumer_key",v=consumerKey},
+  {p="oauth_consumer_key",v=consumerKey}, -- Keys stored in SECRETS.lua file. .gitignore file excludes this, DO NOT push to a hosted git repo!
   {p="oauth_token",v=token},
   {p="oauth_signature_method",v="HMAC-SHA1"},
   {p="oauth_version",v="1.0"}
@@ -51,3 +51,5 @@ end
 twitter.post = function(url,query)
     return twitter.rest("POST",url,query)
 end
+
+return twitter
