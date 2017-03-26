@@ -43,8 +43,8 @@ HMAC.sign = function(req,op,url,params)
   bs= op .. "&" .. req:escape(url) .. "&" .. req:escape(baseString)
 
   local signature = ssl.HMAC(ssl.EVP_sha1(),
-  req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret),
-  #(req:escape(consumerSecret) .. "&" .. req:escape(tokenSecret)),
+  req:escape(os.getenv("consumerSecret")) .. "&" .. req:escape(os.getenv("tokenSecret")),
+  #(req:escape(os.getenv("consumerSecret")) .. "&" .. req:escape(os.getenv("tokenSecret"))),
   bs,
   #bs,
   nil,

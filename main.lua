@@ -1,7 +1,8 @@
+require "os"
 local twitter = require "tweets"
 local json = require "cjson"
 local generateQuote = require "randomQuote"
-local div = 0.6 -- Threshold of short quotes vs long quotes (as percent of max length of tweet)
+local div = os.getenv("div") -- Threshold of short quotes vs long quotes (as percent of max length of tweet)
 
 math.randomseed(os.time())
 

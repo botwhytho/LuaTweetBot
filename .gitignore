@@ -1,3 +1,5 @@
-SECRETS.lua
-quotes.lua
+# Project Notes
 notes.txt
+
+# Exclude specific quotes so it is generalizable
+quotes.lua
