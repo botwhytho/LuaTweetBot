@@ -29,11 +29,11 @@ If you exclude the build argument, by default a production image will be built. 
 To run a development container, run:
 
 ```
-docker run -it --name dev-tweet -v $(pwd):/app -w /app --env-file ./.env botwhytho/lua-tweet-bot:dev /bin/sh
+docker run -it --name dev-tweet -v $(pwd):/app --env-file ./.env --entrypoint /bin/sh botwhytho/lua-tweet-bot:dev
 ```
 
 To run a production container, run:
 
 ```
-docker run --name prod-tweet -v $(pwd):/app -w /app --env-file ./.env botwhytho/lua-tweet-bot:prod luajit main.lua
+docker run --name prod-tweet -v $(pwd):/app --env-file ./.env botwhytho/lua-tweet-bot:prod
 ```

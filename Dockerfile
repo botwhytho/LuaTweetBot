@@ -10,4 +10,9 @@ RUN apk update \
     && luarocks install Lua-cURL \
     && luarocks install basexx \
     && apk del --purge .build-dependencies \
+    && adduser -DHs /bin/sh tweet \
     && /tmp/remove-busybox.sh
+USER tweet
+WORKDIR /app
+ENTRYPOINT ["luajit"]
+CMD ["main.lua"]
