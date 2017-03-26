@@ -14,20 +14,26 @@ git update-index --skip-worktree ./.env
 To build a development docker image, run:
 
 ```
-docker build -t botwhytho/lua-tweet-bot:latest --build-arg ENVIRONMENT_TYPE=DEV .
+docker build -t botwhytho/lua-tweet-bot:dev --build-arg ENVIRONMENT_TYPE=DEV .
 ```
-If you exclude the build argument or define 'ENVIRONMENT_TYPE' as 'PROD' the image will not have the apk package manager or even busybox.
+To build a production docker image, run:
+
+```
+docker build -t botwhytho/lua-tweet-bot:prod --build-arg ENVIRONMENT_TYPE=PROD .
+```
+
+If you exclude the build argument, by default a production image will be built. Please note that the image will not have the apk package manager or even busybox so the entrypoint will have to be the lua workload directly.
 
 #### Run
 
 To run a development container, run:
 
 ```
-docker run -it --name lua-tweet-bot -v $(pwd):/app -w /app botwhytho/lua-tweet-bot:latest /bin/sh
+docker run -it --name dev-tweet -v $(pwd):/app -w /app --env-file ./.env botwhytho/lua-tweet-bot:dev /bin/sh
 ```
 
 To run a production container, run:
 
 ```
-docker run --name lua-tweet-bot -v $(pwd):/app -w /app botwhytho/lua-tweet-bot:latest luajit main.lua
+docker run --name prod-tweet -v $(pwd):/app -w /app --env-file ./.env botwhytho/lua-tweet-bot:prod luajit main.lua
 ```

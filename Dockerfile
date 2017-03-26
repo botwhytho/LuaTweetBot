@@ -10,5 +10,4 @@ RUN apk update \
     && luarocks install Lua-cURL \
     && luarocks install basexx \
     && apk del --purge .build-dependencies \
-    && /tmp/remove-busybox.sh \
-    && rm /tmp/remove-busybox.sh
+    && /tmp/remove-busybox.sh
