@@ -9,20 +9,20 @@ local wisdom = function(div,handle) --Picking a random longer quote from the lis
 	local low = 1
 
 	for k,v in ipairs(quotes) do --Determine lower bound for random set so that if only one quote, the quotes are long
-		if v.l > (140-#handle)*div then
+		if v.l > (140-(#handle+3))*div then
 			low = k-1
 			break
 		end
 	end
 
 	for k,v in ipairs(quotes) do --Picking the max length depending on handle length
-		if v.l > 140-#handle then
+		if v.l > 140-(#handle+3) then
 			high = k-1
 			break
 		end
 	end
 
-	return handle .. quotes[math.random(low,high)].q
+	return ".@" .. handle .. " " .. quotes[math.random(low,high)].q
 
 end
 
@@ -30,7 +30,7 @@ local doubleTrouble = function(div,handle) --Picking two shorter quotes  and com
 	high = #quotes
 
 	for k,v in ipairs(quotes) do --Pick max length to combine two short quotes
-		if v.l > (140-#handle)*div then
+		if v.l > (140-(#handle+3))*div then
 			high = k-1
       break
 		end
@@ -43,12 +43,12 @@ local doubleTrouble = function(div,handle) --Picking two shorter quotes  and com
 	local n2 = math.random(1,high)
   high = n2
 
-	while #handle + #double + #quotes[n2].q > 140 do
+	while (#handle+3) + #double + #quotes[n2].q > 140 do
     high=high-1
 		n2 = math.random(1,high)
 	end
 
-	return handle .. double .. " " .. quotes[n2].q
+	return ".@" .. handle .. " " .. double .. " " .. quotes[n2].q
 
 end
 

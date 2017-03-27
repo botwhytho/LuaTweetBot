@@ -1,8 +1,16 @@
+-- requires
 require "os"
+require "string-split"
 local twitter = require "tweets"
 local json = require "cjson"
 local generateQuote = require "randomQuote"
-local div = os.getenv("div") -- Threshold of short quotes vs long quotes (as percent of max length of tweet)
+
+-- ENV variables
+local div = tonumber(os.getenv("div")) -- Threshold of short quotes vs long quotes (as percent of max length of tweet)
+local topics = os.getenv("topics"):split("|") -- topics variable in .env file, separate with "|"
+local numberOfTweets = tonumber(os.getenv("numberOfTweets")) -- Number of tweets before ending
+local tweetSleep = tonumber(os.getenv("tweetSleep")) -- Number of seconds between tweets
+local isDryRun = os.getenv("isDryRun") == "true" and true or false -- Is this a dry run? nothing will be tweeeted if so
 
 math.randomseed(os.time())
 
@@ -15,13 +23,17 @@ end
 
 local respond = function(topic,bol) -- Searches twitter for a certain topic and tweets a random quote as a response to the latest tweet of the account with the greatest followers.
   local res = twitter.get("https://api.twitter.com/1.1/search/tweets.json",{{p="q",v=topic},{p="lang",v="en"}})
-  local json = json.decode(res)
-  if json.statuses ~= nil then
-    table.sort(json.statuses, function(a,b) return a.user.followers_count > b.user.followers_count end)
-    if bol then
-      local post = twitter.post("https://api.twitter.com/1.1/statuses/update.json",{{p="status",v=generateQuote(div,json.statuses[1].user.screen_name)},{p="trim_user",v=1},{p="in_reply_to_status_id",v=json.statuses[1].id_str}})
+  local tweets = json.decode(res)
+  if tweets.statuses ~= nil then
+    table.sort(tweets.statuses, function(a,b) return a.user.followers_count > b.user.followers_count end)
+    if not bol then
+      local quote = generateQuote(div,tweets.statuses[1].user.screen_name)
+      local res = twitter.get("https://api.twitter.com/1.1/statuses/user_timeline.json",{{p="user_id",v=tweets.statuses[1].user.id_str},{p="screen_name",v=tweets.statuses[1].user.screen_name}})
+      local status = json.decode(res)
+      local post = twitter.post("https://api.twitter.com/1.1/statuses/update.json",{{p="status",v=quote},{p="trim_user",v=1},{p="in_reply_to_status_id",v=status[1].id_str}})
+      print(quote)
     else
-      print(generateQuote(div,json.statuses[1].user.screen_name) .. " - This is a dry run, nothing was tweeted.")
+      print(topic .. " | " .. generateQuote(div,json.statuses[1].user.screen_name) .. " - This is a dry run, nothing was tweeted.")
     end
   else
     print("No tweets found with that keyword. Nothing has been tweeted.")
@@ -32,9 +44,7 @@ end
 --Test Code
 ------------
 
-local topics = {"puppies","cats","fluffy clouds","LuaJIT"}
-
-for i= 1,13 do
-	sleep(2)
-	respond(topics[math.random(1,#topics)],false)
+for i= 1,numberOfTweets do
+	sleep(tweetSleep)
+	respond(topics[math.random(1,#topics)],isDryRun)
 end
