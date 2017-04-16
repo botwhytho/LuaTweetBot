@@ -45,6 +45,8 @@ end
 ------------
 
 for i= 1,numberOfTweets do
+  do
+   respond(topics[math.random(1,#topics)],isDryRun)
+  end
 	sleep(tweetSleep)
-	respond(topics[math.random(1,#topics)],isDryRun)
 end
